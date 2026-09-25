@@ -1,0 +1,100 @@
+{
+  "baseline_id": "v2-student-handbook-hybrid",
+  "created_at": "2026-09-12",
+  "description": "学生手册 RAG 第二版基线：BM25 + 向量混合检索，deepseek-flash 生成，deepseek-chat 语义评判。",
+  "previous_baseline": "v1-student-handbook",
+  "dataset": {
+    "path": "eval/student_handbook_questions.jsonl",
+    "version": "v1",
+    "questions": 77,
+    "answerable": 72,
+    "unanswerable": 5,
+    "sha256": "c4d4fb9d38960e064ad08d48bcf9fd3f9e0b9c2c97ee76c48e29f76cfbb06830"
+  },
+  "source_document": {
+    "name": "学生手册20240906.pdf",
+    "pages": 161
+  },
+  "knowledge_base": {
+    "chunks": 280,
+    "vector_store": "Chroma",
+    "vector_dir": "data/chroma_qwen",
+    "embedding_model": "qwen3.7-text-embedding-flash",
+    "embedding_dim": 1024,
+    "embedding_batch_size": 25
+  },
+  "models": {
+    "answer_llm": "deepseek-flash",
+    "judge_llm": "deepseek-chat"
+  },
+  "retrieval": {
+    "type": "hybrid_bm25_vector",
+    "bm25": true,
+    "rerank": false,
+    "top_k": 5,
+    "retrieve_candidates": 10,
+    "bm25_weight": 0.4,
+    "vector_weight": 0.6,
+    "tokenizer": "jieba.cut_for_search",
+    "chunk_size": 600,
+    "chunk_overlap": 80
+  },
+  "metrics": {
+    "total": 77,
+    "correct": 74,
+    "correct_rate": 0.961,
+    "partial": 3,
+    "partial_rate": 0.039,
+    "wrong": 0,
+    "wrong_rate": 0.0,
+    "unanswerable_total": 5,
+    "unanswerable_correct_refusal": 5,
+    "avg_latency_seconds": 3.691,
+    "legacy_keyword_fact_coverage": 0.262
+  },
+  "by_type": {
+    "fact": { "count": 42, "correct": 41, "avg_score": 1.976, "avg_latency_seconds": 3.199 },
+    "multi_hop": { "count": 13, "correct": 12, "avg_score": 1.923, "avg_latency_seconds": 5.051 },
+    "table": { "count": 10, "correct": 10, "avg_score": 2.0, "avg_latency_seconds": 3.312 },
+    "unanswerable": { "count": 5, "correct": 5, "avg_score": 2.0, "avg_latency_seconds": 2.448 },
+    "comparison": { "count": 4, "correct": 4, "avg_score": 2.0, "avg_latency_seconds": 4.387 },
+    "procedure": { "count": 3, "correct": 2, "avg_score": 1.667, "avg_latency_seconds": 7.03 }
+  },
+  "partial_items": [
+    {
+      "id": "sh-028",
+      "type": "procedure",
+      "reason": "遗漏5日内答复是否受理的关键事实，且添加了标准答案未提及的延长、逾期等细节。",
+      "latency_seconds": 13.791
+    },
+    {
+      "id": "sh-030",
+      "type": "fact",
+      "reason": "核心事实正确，但添加了标准答案未提及的1年期限、2/3规定等外部信息，且未明确毕业班处分期可缩短。",
+      "latency_seconds": 10.633
+    },
+    {
+      "id": "sh-060",
+      "type": "multi_hop",
+      "reason": "遗漏必修课专业前10%、综合考评班级前10%、志愿服务不少于30小时等关键条件。",
+      "latency_seconds": 3.57
+    }
+  ],
+  "comparison_vs_v1": {
+    "correct_rate_delta": 0.026,
+    "correct_delta": 2,
+    "partial_delta": -2,
+    "wrong_delta": 0,
+    "avg_latency_delta_seconds": -0.364,
+    "fact_avg_score_delta": 0.024,
+    "multi_hop_avg_score_delta": 0.077
+  },
+  "artifacts": {
+    "raw_results": "eval/results/run_20260912_170226.jsonl",
+    "judged_results": "eval/results/run_20260912_170226_judged.jsonl",
+    "judge_report": "eval/results/run_20260912_170226_judge_report.md",
+    "comparison_report": "eval/results/run_20260912_170226_judged_vs_v1.md",
+    "raw_results_sha256": "3c1f10d330faefb104e573bb02c58641f2634f7d72456aa45ebea28ff011d4ba",
+    "judged_results_sha256": "3df05818ede0472e1ca665cb4252c34773012d0a8e074a751b18aafe6edc3199"
+  }
+}

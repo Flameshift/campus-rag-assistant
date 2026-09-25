@@ -1,0 +1,104 @@
+{
+  "baseline_id": "v4-student-handbook-rerank",
+  "created_at": "2026-09-12",
+  "description": "学生手册 RAG 第四版基线：BM25 + 向量粗筛 20 条，再使用 qwen3.7-text-rerank 精排并取 Top 5。",
+  "previous_baseline": "v3-student-handbook-semantic-dedup",
+  "dataset": {
+    "path": "eval/student_handbook_questions.jsonl",
+    "version": "v1",
+    "questions": 77,
+    "answerable": 72,
+    "unanswerable": 5,
+    "sha256": "c4d4fb9d38960e064ad08d48bcf9fd3f9e0b9c2c97ee76c48e29f76cfbb06830"
+  },
+  "knowledge_base": {
+    "canonical_chunks": 278,
+    "duplicate_records": 0,
+    "vector_store": "Chroma",
+    "distance": "cosine",
+    "vector_dir": "data/chroma_qwen",
+    "embedding_model": "qwen3.7-text-embedding-flash",
+    "embedding_dim": 1024,
+    "embedding_batch_size": 25
+  },
+  "models": {
+    "answer_llm": "deepseek-flash",
+    "judge_llm": "deepseek-chat",
+    "rerank_model": "qwen3.7-text-rerank"
+  },
+  "retrieval": {
+    "type": "hybrid_bm25_vector_then_rerank",
+    "bm25": true,
+    "rerank": true,
+    "rerank_api_key_source": "EMBEDDING_API_KEY",
+    "rerank_fallback": "调用失败时保留原检索顺序",
+    "top_k": 5,
+    "retrieve_candidates": 20,
+    "rerank_candidates": 20,
+    "bm25_weight": 0.4,
+    "vector_weight": 0.6
+  },
+  "semantic_dedup": {
+    "enabled": true,
+    "threshold": 0.75,
+    "gray_low": 0.6,
+    "top_k": 3,
+    "llm_confirm": true,
+    "judge_model": "deepseek-chat",
+    "behavior": "高置信直接去重；灰区由 LLM 判断候选是否已被已有内容覆盖；重复只写 chunk 记录，不写入向量库"
+  },
+  "metrics": {
+    "total": 77,
+    "correct": 74,
+    "correct_rate": 0.961,
+    "partial": 3,
+    "partial_rate": 0.039,
+    "wrong": 0,
+    "wrong_rate": 0.0,
+    "unanswerable_total": 5,
+    "unanswerable_correct_refusal": 5,
+    "avg_latency_seconds": 4.2139,
+    "legacy_keyword_fact_coverage": 0.223
+  },
+  "by_type": {
+    "fact": { "count": 42, "correct": 42, "avg_score": 2.0 },
+    "multi_hop": { "count": 13, "correct": 11, "avg_score": 1.846 },
+    "table": { "count": 10, "correct": 10, "avg_score": 2.0 },
+    "unanswerable": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "comparison": { "count": 4, "correct": 4, "avg_score": 2.0 },
+    "procedure": { "count": 3, "correct": 2, "avg_score": 1.667 }
+  },
+  "partial_items": [
+    {
+      "id": "sh-028",
+      "type": "procedure",
+      "reason": "遗漏5日内答复是否受理，复查时限表述不够准确"
+    },
+    {
+      "id": "sh-050",
+      "type": "multi_hop",
+      "reason": "补充了标准答案未列出的边远地区就业、志愿服务等条件，Judge 判定为部分正确"
+    },
+    {
+      "id": "sh-060",
+      "type": "multi_hop",
+      "reason": "遗漏必修课专业前10%、综合考评班级前10%；对应 chunk 258 未进入粗筛候选，Rerank 无法恢复"
+    }
+  ],
+  "comparison_vs_v3": {
+    "correct_rate_delta": 0.0,
+    "correct_delta": 0,
+    "partial_delta": 0,
+    "wrong_delta": 0,
+    "avg_latency_delta_seconds": -7.7161,
+    "latency_note": "外部模型接口响应波动较大，延迟改善不作为稳定的性能收益结论"
+  },
+  "artifacts": {
+    "raw_results": "eval/results/run_20260912_213128.jsonl",
+    "judged_results": "eval/results/run_20260912_213128_judged.jsonl",
+    "judge_report": "eval/results/run_20260912_213128_judge_report.md",
+    "comparison_report": "eval/results/run_20260912_213128_judged_vs_v3.md",
+    "raw_results_sha256": "62680569b26cc27c491a2a2eb41333f09f8c84a5d979e6bc178ab763c256fb01",
+    "judged_results_sha256": "5d263195ebba2a63de5889199c6b70a9d5d961272694cfd83899c6719003871a"
+  }
+}

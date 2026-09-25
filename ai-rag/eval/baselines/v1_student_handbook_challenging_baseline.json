@@ -1,0 +1,101 @@
+{
+  "baseline_id": "v1-student-handbook-challenging",
+  "created_at": "2026-09-15",
+  "description": "学生手册 RAG 挑战集首版基线：覆盖口语化、信息过载、指代不清、错别字无标点、错误前提、混合意图、无法回答和提示注入。",
+  "previous_baseline": null,
+  "dataset": {
+    "path": "eval/student_handbook_challenging_questions.jsonl",
+    "version": "v1",
+    "questions": 40,
+    "answerable": 34,
+    "unanswerable": 6,
+    "sha256": "CBDF06A2BEEA396F1CE50F30E79258A5D08C56326B28552C8DDE9CE4B4EFB9D4"
+  },
+  "knowledge_base": {
+    "source_files": 1,
+    "canonical_chunks": 714,
+    "duplicate_records": 0,
+    "vector_store": "Chroma",
+    "distance": "cosine",
+    "embedding_model": "qwen3.7-text-embedding-flash",
+    "embedding_dim": 1024,
+    "embedding_batch_size": 25,
+    "parser_version": "v2",
+    "chunker_version": "v2"
+  },
+  "models": {
+    "answer_llm": "deepseek-flash",
+    "judge_llm": "deepseek-chat",
+    "rerank_model": "qwen3.7-text-rerank"
+  },
+  "answering": {
+    "prompt_constraints": true,
+    "temperature": 0,
+    "inline_evidence_citations": true,
+    "automatic_source_footer": true,
+    "footer_uses_cited_evidence_only": true,
+    "footer_fields": ["source", "page", "section_path"]
+  },
+  "retrieval": {
+    "type": "structured_chunking_hybrid_then_rerank_and_neighbor_expansion",
+    "rerank": true,
+    "neighbor_expansion": true,
+    "neighbor_window": 1,
+    "neighbor_max_added": 3,
+    "top_k": 5,
+    "retrieve_candidates": 20,
+    "rerank_candidates": 20
+  },
+  "execution": {
+    "api": "http://127.0.0.1:8080/api/chat",
+    "workers": 8,
+    "timeout_seconds": 240,
+    "request_errors": 0,
+    "latency_note": "8 路并发请求的平均延迟只用于留档，不可直接与串行基线或线上时延比较。"
+  },
+  "metrics": {
+    "total": 40,
+    "correct": 38,
+    "correct_rate": 0.95,
+    "partial": 1,
+    "partial_rate": 0.025,
+    "wrong": 1,
+    "wrong_rate": 0.025,
+    "unanswerable_total": 6,
+    "unanswerable_correct_refusal": 6,
+    "avg_latency_seconds": 93.243,
+    "legacy_keyword_fact_coverage": 0.273,
+    "answers_with_inline_citations": 40,
+    "answers_with_source_footer": 40,
+    "judge_errors": 0
+  },
+  "by_type": {
+    "colloquial": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "verbose": { "count": 5, "correct": 4, "avg_score": 1.8 },
+    "ambiguous_reference": { "count": 5, "correct": 4, "avg_score": 1.6 },
+    "typo_no_punctuation": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "false_premise": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "mixed_intent": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "unanswerable": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "prompt_injection": { "count": 5, "correct": 5, "avg_score": 2.0 }
+  },
+  "items_requiring_review": [
+    {
+      "id": "prod-amb-005",
+      "score": 0,
+      "reason": "多轮指代问题问成绩复查时限和办公室，模型误称资料未提供相关规则。"
+    },
+    {
+      "id": "prod-verbose-003",
+      "score": 1,
+      "reason": "病假审批回答正确，但事假一周以上的完整审批链和最终批准人表述不完整。"
+    }
+  ],
+  "artifacts": {
+    "raw_results": "eval/results/run_20260915_212807.jsonl",
+    "judged_results": "eval/results/run_20260915_212807_judged.jsonl",
+    "judge_report": "eval/results/run_20260915_212807_judge_report.md",
+    "raw_results_sha256": "CDD336DC54BF74FE8BBF98335FD3CE271AA026B9423A07937FA0197AB1D9EF36",
+    "judged_results_sha256": "487C8D4D97FA4C31520576791C8B261D5B4B7B36104755471B810762A40FCBEE"
+  }
+}

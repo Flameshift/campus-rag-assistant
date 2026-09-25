@@ -1,0 +1,98 @@
+{
+  "baseline_id": "v6-student-handbook-answer-contract",
+  "created_at": "2026-09-13",
+  "description": "学生手册 RAG 第六版基线：结构化分块、Rerank、相邻扩展、回答范围约束、证据编号和自动来源列表。",
+  "previous_baseline": "v5-student-handbook-structured",
+  "dataset": {
+    "path": "eval/student_handbook_questions.jsonl",
+    "version": "v1",
+    "questions": 77,
+    "answerable": 72,
+    "unanswerable": 5,
+    "sha256": "c4d4fb9d38960e064ad08d48bcf9fd3f9e0b9c2c97ee76c48e29f76cfbb06830"
+  },
+  "knowledge_base": {
+    "source_files": 1,
+    "canonical_chunks": 714,
+    "duplicate_records": 0,
+    "vector_store": "Chroma",
+    "distance": "cosine",
+    "embedding_model": "qwen3.7-text-embedding-flash",
+    "embedding_dim": 1024,
+    "embedding_batch_size": 25,
+    "parser_version": "v2",
+    "chunker_version": "v2"
+  },
+  "models": {
+    "answer_llm": "deepseek-flash",
+    "judge_llm": "deepseek-chat",
+    "rerank_model": "qwen3.7-text-rerank"
+  },
+  "answering": {
+    "prompt_constraints": true,
+    "temperature": 0,
+    "inline_evidence_citations": true,
+    "automatic_source_footer": true,
+    "footer_uses_cited_evidence_only": true,
+    "footer_fields": ["source", "page", "section_path"]
+  },
+  "retrieval": {
+    "type": "structured_chunking_hybrid_then_rerank_and_neighbor_expansion",
+    "rerank": true,
+    "neighbor_expansion": true,
+    "neighbor_window": 1,
+    "neighbor_max_added": 3,
+    "top_k": 5,
+    "retrieve_candidates": 20,
+    "rerank_candidates": 20
+  },
+  "metrics": {
+    "total": 77,
+    "correct": 77,
+    "correct_rate": 1.0,
+    "partial": 0,
+    "partial_rate": 0.0,
+    "wrong": 0,
+    "wrong_rate": 0.0,
+    "unanswerable_total": 5,
+    "unanswerable_correct_refusal": 5,
+    "avg_latency_seconds": 87.8243,
+    "legacy_keyword_fact_coverage": 0.24,
+    "answers_with_inline_citations": 77,
+    "answers_with_source_footer": 77,
+    "latency_note": "DashScope 排队仍约 82 秒；本地相邻扩展平均约 9 毫秒"
+  },
+  "stage_timings_ms": {
+    "query_embedding_avg": 42265.03,
+    "retrieval_avg": 42276.84,
+    "rerank_avg": 40260.5,
+    "neighbor_expansion_avg": 9.28,
+    "llm_generation_avg": 5259.5,
+    "total_avg": 87806.22
+  },
+  "by_type": {
+    "fact": { "count": 42, "correct": 42, "avg_score": 2.0 },
+    "multi_hop": { "count": 13, "correct": 13, "avg_score": 2.0 },
+    "table": { "count": 10, "correct": 10, "avg_score": 2.0 },
+    "unanswerable": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "comparison": { "count": 4, "correct": 4, "avg_score": 2.0 },
+    "procedure": { "count": 3, "correct": 3, "avg_score": 2.0 }
+  },
+  "partial_items": [],
+  "comparison_vs_v5": {
+    "correct_rate_delta": 0.026,
+    "correct_delta": 2,
+    "partial_delta": -2,
+    "wrong_delta": 0,
+    "avg_latency_delta_seconds": 1.6043,
+    "latency_delta_note": "外部接口排队波动，不作为性能回归结论"
+  },
+  "artifacts": {
+    "raw_results": "eval/results/run_20260913_180135.jsonl",
+    "judged_results": "eval/results/run_20260913_180135_judged.jsonl",
+    "judge_report": "eval/results/run_20260913_180135_judge_report.md",
+    "comparison_report": "eval/results/run_20260913_180135_judged_vs_v5.md",
+    "raw_results_sha256": "9f4a8eca0898adf4d3f852927c483b5cfb746c016d3c317b3739f02c8f051757",
+    "judged_results_sha256": "a78e46da4787513c6007c1171cc65d2e3327168dd1ef627f7615fe4d72872599"
+  }
+}

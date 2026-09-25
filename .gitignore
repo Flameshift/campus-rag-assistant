@@ -1,0 +1,57 @@
+# Runtime secrets and local configuration
+**/.env
+**/.env.local
+**/.env.*.local
+!**/.env.example
+
+# Python
+**/.venv/
+**/.venv-*/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.ruff_cache/
+
+# Java / Maven
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+
+# Node / Vite
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/*.local
+
+# IDE and OS files
+**/.idea/
+**/.vscode/
+**/.DS_Store
+
+# Logs and local runtime data
+**/*.log
+**/logs/
+ai-rag/data/*.db
+ai-rag/data/*.bak
+ai-rag/data/backup_*/
+ai-rag/data/uploads/
+ai-rag/data/rag_traces/
+ai-rag/data/logs/
+ai-rag/data/chroma/
+ai-rag/data/chroma_qwen/
+ai-springboot/data/
+
+# Evaluation outputs
+ai-rag/eval/results/
+ai-rag/eval/reports/
+ai-rag/eval/experiments/
+ai-rag/eval/generated/candidate_pool*
+ai-rag/eval/generated/hidden_candidates*
+ai-rag/eval/generated/pilot_*/
+ai-rag/eval/generated/pool_*/
+ai-rag/eval/generated/random_candidates*
+ai-rag/eval/generated/rejected*
+ai-rag/eval/generated/reports/
+
+# Temporary files
+**/*.tmp
+**/*.temp

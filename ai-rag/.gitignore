@@ -1,0 +1,17 @@
+.venv/
+.venv-*/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+.ruff_cache/
+data/chroma/
+data/chroma_qwen/
+data/*.bak
+data/*.db
+data/uploads/
+data/rag_traces/
+data/logs/
+eval/results/
+eval/reports/
+eval/experiments/

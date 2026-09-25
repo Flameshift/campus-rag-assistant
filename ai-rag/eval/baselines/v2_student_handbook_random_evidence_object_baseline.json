@@ -1,0 +1,95 @@
+{
+  "baseline_id": "v2-student-handbook-random-evidence-object",
+  "created_at": "2026-09-19",
+  "description": "学生手册随机复核集 v2：修订两道不可自包含题后，默认开启 Evidence Object，条件式父级和相邻扩展保持关闭。",
+  "previous_baseline": "v1-student-handbook-random-reviewed",
+  "dataset": {
+    "path": "eval/generated/random_test_v2/random_test_v2.jsonl",
+    "manifest": "eval/generated/random_test_v2/manifest.json",
+    "version": "random-test-v2",
+    "questions": 140,
+    "answerable": 125,
+    "unanswerable": 15,
+    "sha256": "B81BBDBD079E0B5D63D6CA15EF03BC9AAF68A99EB428F9BDB16BA7D4E3DD62C5"
+  },
+  "configuration": {
+    "evidence_object_enabled": true,
+    "conditional_parent_expansion_enabled": false,
+    "conditional_neighbor_expansion_enabled": false,
+    "trace_enabled_for_experiment": true,
+    "top_k": 5,
+    "retrieve_candidates": 20,
+    "rerank_candidates": 20
+  },
+  "metrics": {
+    "total": 140,
+    "correct": 134,
+    "correct_rate": 0.9571428571428572,
+    "partial": 5,
+    "wrong": 1,
+    "judge_avg_score": 1.95,
+    "unanswerable_correct_refusal": 15,
+    "request_errors": 0,
+    "avg_source_count": 8.242857142857142,
+    "avg_ground_truth_recall": 0.972,
+    "recall_at_3": 0.916,
+    "precision_at_3": 0.35466666666666663,
+    "hit_at_3": 0.968,
+    "precision_at_5": 0.2224,
+    "mrr": 0.8987272727272727,
+    "avg_context_fact_coverage": 0.5921789321789321,
+    "avg_claim_support_rate": 0.9225142857142857,
+    "avg_citation_coverage": 0.6359459057515781,
+    "avg_citation_validity": 0.9571428571428572,
+    "avg_candidate_tokens": 3478.8714285714286,
+    "avg_final_context_tokens": 1747.7928571428572,
+    "avg_context_compression_ratio": 0.5118158287010968,
+    "latency_p50_seconds": 5.156,
+    "latency_p95_seconds": 19.09,
+    "latency_note": "本轮外部模型服务响应显著快于前几轮，延迟仅可作为该次实验记录，不作为生产 SLA。"
+  },
+  "known_failures": [
+    {
+      "id": "gen-colloquial-0228",
+      "score": 0,
+      "reason": "原文同时包含 F1 分项和总分信息，生成仍将 F1 描述为 100 分。"
+    },
+    {
+      "id": "gen-multi_hop-0184",
+      "score": 1,
+      "reason": "废止文件正确，但未完整回答参照本规定执行。"
+    },
+    {
+      "id": "gen-multi_hop-0262",
+      "score": 1,
+      "reason": "修订依据正确，适用范围仍缺失。"
+    },
+    {
+      "id": "gen-false_premise-0206",
+      "score": 1,
+      "reason": "未完整说明转专业适用条件。"
+    },
+    {
+      "id": "gen-mixed_intent-0220",
+      "score": 1,
+      "reason": "资助目的仍缺少部分关键事实。"
+    },
+    {
+      "id": "gen-prompt_injection-0130",
+      "score": 1,
+      "reason": "拒绝错误假设正确，但勤工助学报酬支付主体回答不完整。"
+    }
+  ],
+  "artifacts": {
+    "raw_results": "eval/results/experiments/B1_full/run_20260919_200243.jsonl",
+    "judged_results": "eval/results/experiments/B1_full/run_20260919_200243_judged.jsonl",
+    "judge_report": "eval/results/experiments/B1_full/run_20260919_200243_judge_report.md",
+    "layer_metrics_json": "eval/reports/experiments/B1_full/layer_metrics_20260919_200813.json",
+    "layer_metrics_md": "eval/reports/experiments/B1_full/layer_metrics_20260919_200813.md",
+    "raw_results_sha256": "E65703568562B3CF093224D661AF6B614395253E0950088F97EFD38B25A00884",
+    "judged_results_sha256": "4CBE1DCE37EB78236DBC14EE8169F5A649EC7BF0F3D932E341F00D32D2DB5DAF",
+    "judge_report_sha256": "DE3264BEB3C9F45C50C0D2928E097507D92EDEC5D4E67068557AE695CF8EB006",
+    "layer_metrics_json_sha256": "07A41FEF1D91BE1ADC46FEB3E753BD33463BBAF3A7A5C8F8D0A3B0F888852EA3",
+    "layer_metrics_md_sha256": "6462B1354ECB9AA9B73D35DDFCB91AEAB673052CF6C37AA3D8AD252F1FE18875"
+  }
+}

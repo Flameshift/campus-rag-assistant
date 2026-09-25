@@ -1,0 +1,98 @@
+{
+  "baseline_id": "v1-student-handbook",
+  "created_at": "2026-09-12",
+  "description": "学生手册 RAG 第一版基线：纯向量语义检索 + deepseek-flash 生成，deepseek-chat 语义评判。",
+  "dataset": {
+    "path": "eval/student_handbook_questions.jsonl",
+    "version": "v1",
+    "questions": 77,
+    "answerable": 72,
+    "unanswerable": 5,
+    "sha256": "c4d4fb9d38960e064ad08d48bcf9fd3f9e0b9c2c97ee76c48e29f76cfbb06830"
+  },
+  "source_document": {
+    "name": "学生手册20240906.pdf",
+    "pages": 161,
+    "path": "C:/Users/czx/xwechat_files/wxid_db23a5weso4k22_6e49/msg/file/2026-09/学生手册20240906.pdf"
+  },
+  "knowledge_base": {
+    "chunks": 280,
+    "vector_store": "Chroma",
+    "vector_dir": "data/chroma_qwen",
+    "embedding_model": "qwen3.7-text-embedding-flash",
+    "embedding_dim": 1024,
+    "embedding_batch_size": 25
+  },
+  "models": {
+    "answer_llm": "deepseek-flash",
+    "judge_llm": "deepseek-chat"
+  },
+  "retrieval": {
+    "type": "vector_semantic_only",
+    "bm25": false,
+    "rerank": false,
+    "top_k": 5,
+    "chunk_size": 600,
+    "chunk_overlap": 80
+  },
+  "metrics": {
+    "total": 77,
+    "correct": 72,
+    "correct_rate": 0.935,
+    "partial": 5,
+    "partial_rate": 0.065,
+    "wrong": 0,
+    "wrong_rate": 0.0,
+    "unanswerable_total": 5,
+    "unanswerable_correct_refusal": 5,
+    "avg_latency_seconds": 4.055,
+    "legacy_keyword_fact_coverage": 0.23
+  },
+  "by_type": {
+    "fact": { "count": 42, "correct": 40, "avg_score": 1.952, "avg_latency_seconds": 3.678 },
+    "multi_hop": { "count": 13, "correct": 11, "avg_score": 1.846, "avg_latency_seconds": 5.588 },
+    "table": { "count": 10, "correct": 10, "avg_score": 2.0, "avg_latency_seconds": 3.248 },
+    "unanswerable": { "count": 5, "correct": 5, "avg_score": 2.0, "avg_latency_seconds": 2.421 },
+    "comparison": { "count": 4, "correct": 4, "avg_score": 2.0, "avg_latency_seconds": 4.093 },
+    "procedure": { "count": 3, "correct": 2, "avg_score": 1.667, "avg_latency_seconds": 8.056 }
+  },
+  "partial_items": [
+    {
+      "id": "sh-009",
+      "type": "fact",
+      "reason": "核心事实正确，但添加了标准答案未提及的具体处分幅度和计算细节。",
+      "latency_seconds": 8.253
+    },
+    {
+      "id": "sh-011",
+      "type": "multi_hop",
+      "reason": "遗漏旷课3次以上和考试违纪作弊受处分两项关键事实。",
+      "latency_seconds": 2.035
+    },
+    {
+      "id": "sh-028",
+      "type": "procedure",
+      "reason": "遗漏5日内答复是否受理，且复查时限表述不准确。",
+      "latency_seconds": 13.497
+    },
+    {
+      "id": "sh-046",
+      "type": "fact",
+      "reason": "遗漏德育、智育、体育每项最高加5分的关键事实。",
+      "latency_seconds": 9.042
+    },
+    {
+      "id": "sh-060",
+      "type": "multi_hop",
+      "reason": "遗漏必修课专业前10%和综合考评班级前10%两个关键事实。",
+      "latency_seconds": 18.463
+    }
+  ],
+  "artifacts": {
+    "raw_results": "eval/results/run_20260912_160747.jsonl",
+    "judged_results": "eval/results/run_20260912_160747_judged.jsonl",
+    "judge_report": "eval/results/run_20260912_160747_judge_report.md",
+    "raw_results_sha256": "02c15e6eb7631a3c217955bd8848f479bcd7df2132ceaaaaa83572dcf79d5bb4",
+    "judged_results_sha256": "05bb87301972deb7d67dd0de7b7ed430618067bd7df5a9ffa7a6ee4a58888512"
+  }
+}

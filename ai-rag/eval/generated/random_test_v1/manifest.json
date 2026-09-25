@@ -1,0 +1,16 @@
+{
+  "dataset_id": "random-test-v1",
+  "created_at": "2026-09-18",
+  "seed": 20260918,
+  "source_pool": "eval/generated/pool_20260918_v2/candidate_pool_20260918_014739.jsonl",
+  "source_random": "eval/generated/pool_20260918_v2/random_candidates_20260918_014739.jsonl",
+  "clean_subset": "eval/generated/reports/clean_candidates_20260918_015756.jsonl",
+  "ready_count": 113,
+  "review_count": 27,
+  "sha256": "4D4E69E79E836CF4CABAEBF69A27EDA13C65D90A569673650E60AB0531C09F06",
+  "status": "candidate_pending_manual_review",
+  "artifacts": {
+    "ready": "eval/generated/random_test_v1/random_test_v1.jsonl",
+    "review": "eval/generated/random_test_v1/random_test_v1_review.jsonl"
+  }
+}

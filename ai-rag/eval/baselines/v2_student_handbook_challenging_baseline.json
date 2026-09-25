@@ -1,0 +1,91 @@
+{
+  "baseline_id": "v2-student-handbook-challenging",
+  "created_at": "2026-09-16",
+  "description": "学生手册挑战集第二版基线：父子检索、回答复核和系统治理后的干净重跑。",
+  "previous_baseline": "v1-student-handbook-challenging",
+  "dataset": {
+    "path": "eval/student_handbook_challenging_questions.jsonl",
+    "version": "v1",
+    "questions": 40,
+    "answerable": 34,
+    "unanswerable": 6,
+    "sha256": "CBDF06A2BEEA396F1CE50F30E79258A5D08C56326B28552C8DDE9CE4B4EFB9D4"
+  },
+  "knowledge_base": {
+    "source_files": 1,
+    "canonical_chunks": 714,
+    "parent_metadata_chunks": 714,
+    "parent_groups": 667,
+    "vector_store": "Chroma",
+    "distance": "cosine",
+    "embedding_model": "qwen3.7-text-embedding-flash",
+    "embedding_dim": 1024,
+    "embedding_batch_size": 25,
+    "parser_version": "v2",
+    "chunker_version": "v2"
+  },
+  "models": {
+    "answer_llm": "deepseek-flash",
+    "judge_llm": "deepseek-chat",
+    "rerank_model": "qwen3.7-text-rerank",
+    "query_rewrite_model": "deepseek-chat",
+    "answer_verification_model": "deepseek-chat"
+  },
+  "retrieval": {
+    "type": "structured_chunking_hybrid_then_rerank_parent_and_neighbor_expansion",
+    "rerank": true,
+    "parent_expansion": true,
+    "neighbor_expansion": true,
+    "top_k": 5,
+    "retrieve_candidates": 20,
+    "rerank_candidates": 20
+  },
+  "answering": {
+    "answer_verification": true,
+    "inline_evidence_citations": true,
+    "automatic_source_footer": true
+  },
+  "metrics": {
+    "total": 40,
+    "correct": 40,
+    "correct_rate": 1.0,
+    "partial": 0,
+    "partial_rate": 0.0,
+    "wrong": 0,
+    "wrong_rate": 0.0,
+    "unanswerable_total": 6,
+    "unanswerable_correct_refusal": 6,
+    "avg_latency_seconds": 100.0938,
+    "legacy_keyword_fact_coverage": 0.2338,
+    "answers_with_inline_citations": 40,
+    "answers_with_source_footer": 40,
+    "request_errors": 0,
+    "judge_errors": 0
+  },
+  "by_type": {
+    "colloquial": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "verbose": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "ambiguous_reference": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "typo_no_punctuation": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "false_premise": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "mixed_intent": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "unanswerable": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "prompt_injection": { "count": 5, "correct": 5, "avg_score": 2.0 }
+  },
+  "comparison_vs_v1": {
+    "correct_rate_delta": 0.05,
+    "correct_delta": 2,
+    "partial_delta": -1,
+    "wrong_delta": -1,
+    "avg_latency_delta_seconds": 6.8508
+  },
+  "artifacts": {
+    "raw_results": "eval/results/run_20260916_220356.jsonl",
+    "judged_results": "eval/results/run_20260916_220356_judged.jsonl",
+    "judge_report": "eval/results/run_20260916_220356_judge_report.md",
+    "comparison_report": "eval/results/run_20260916_220356_judged_vs_v1.md",
+    "raw_results_sha256": "0407970EBDF0F0F4BA948164336724F3C5FCF5C2FEFD4A7C1508912151B3B5A5",
+    "judged_results_sha256": "0C6A882AA6C8D7A13A607A892BFCE1A812FBBB5A213930F5CAAB819DC83BBAF1",
+    "comparison_report_sha256": "98E1A41055EE4712C0C37D252612D6630E5D2F8A8F4FE7864A513571773E4BC9"
+  }
+}

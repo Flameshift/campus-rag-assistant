@@ -1,0 +1,156 @@
+{
+  "baseline_id": "v1-student-handbook-random-reviewed",
+  "created_at": "2026-09-19",
+  "description": "学生手册随机复核集 v1 发布基线：140 道随机候选经复核后，在父子检索、回答复核和内部认证配置下完成首轮全量评测。",
+  "previous_baseline": "v7-student-handbook-parent-child-verification",
+  "dataset": {
+    "path": "eval/generated/random_test_v1/random_test_v1_reviewed.jsonl",
+    "manifest": "eval/generated/random_test_v1/manifest_reviewed.json",
+    "version": "random-test-v1-reviewed",
+    "seed": 20260918,
+    "questions": 140,
+    "answerable": 125,
+    "unanswerable": 15,
+    "review_status": "reviewed",
+    "verification_status": "verified",
+    "sha256": "C6E92B1BE2D77071A146DEDAA4D76772F84D94974F88A4C95A05BDE03ACA9B29"
+  },
+  "knowledge_base": {
+    "source_files": 1,
+    "canonical_chunks": 714,
+    "duplicate_records": 0,
+    "parent_metadata_chunks": 714,
+    "parent_groups": 667,
+    "vector_store": "Chroma",
+    "distance": "cosine",
+    "embedding_model": "qwen3.7-text-embedding-flash",
+    "embedding_dim": 1024,
+    "parser_version": "v2",
+    "chunker_version": "v2"
+  },
+  "models": {
+    "answer_llm": "deepseek-flash",
+    "judge_llm": "deepseek-chat",
+    "rerank_model": "qwen3.7-text-rerank",
+    "query_rewrite_model": "deepseek-chat",
+    "answer_verification_model": "deepseek-chat"
+  },
+  "metrics": {
+    "total": 140,
+    "correct": 134,
+    "correct_rate": 0.9571428571428572,
+    "partial": 4,
+    "partial_rate": 0.02857142857142857,
+    "wrong": 2,
+    "wrong_rate": 0.014285714285714285,
+    "judge_avg_score": 1.9428571428571428,
+    "unanswerable_total": 15,
+    "unanswerable_correct_refusal": 15,
+    "request_errors": 0,
+    "judge_errors": 0,
+    "avg_source_count": 8.885714285714286,
+    "avg_ground_truth_recall": 0.956,
+    "avg_context_fact_coverage": 0.5893217893217894,
+    "avg_rerank_top_score": 0.8959636026134877,
+    "parent_expansion_rate": 0.30714285714285716,
+    "avg_citation_coverage": 0.6563939136260565,
+    "avg_citation_validity": 0.9642857142857143,
+    "avg_claim_support_rate": 0.9014035714285714,
+    "answer_repair_rate": 0.08571428571428572,
+    "avg_latency_seconds": 89.75675714285714,
+    "latency_p50_seconds": 88.134,
+    "latency_p95_seconds": 102.006,
+    "latency_note": "6 路并发和外部模型排队导致延迟不可作为生产性能基线"
+  },
+  "stage_timings_ms": {
+    "query_embedding_avg": 42002.02,
+    "retrieval_avg": 42080.03,
+    "rerank_avg": 40322.18,
+    "parent_expansion_avg": 52.06,
+    "neighbor_expansion_avg": 27.79,
+    "answer_verification_avg": 1281.97,
+    "llm_generation_avg": 5829.88,
+    "total_avg": 89689.44
+  },
+  "by_type": {
+    "ambiguous_reference": {"count": 8, "correct": 8, "partial": 0, "wrong": 0, "avg_score": 2.0},
+    "colloquial": {"count": 15, "correct": 14, "partial": 0, "wrong": 1, "avg_score": 1.867},
+    "comparison": {"count": 1, "correct": 1, "partial": 0, "wrong": 0, "avg_score": 2.0},
+    "fact": {"count": 11, "correct": 11, "partial": 0, "wrong": 0, "avg_score": 2.0},
+    "false_premise": {"count": 16, "correct": 16, "partial": 0, "wrong": 0, "avg_score": 2.0},
+    "mixed_intent": {"count": 14, "correct": 12, "partial": 2, "wrong": 0, "avg_score": 1.857},
+    "multi_hop": {"count": 11, "correct": 9, "partial": 1, "wrong": 1, "avg_score": 1.727},
+    "procedure": {"count": 7, "correct": 7, "partial": 0, "wrong": 0, "avg_score": 2.0},
+    "prompt_injection": {"count": 10, "correct": 9, "partial": 1, "wrong": 0, "avg_score": 1.9},
+    "table": {"count": 9, "correct": 9, "partial": 0, "wrong": 0, "avg_score": 2.0},
+    "typo_no_punctuation": {"count": 16, "correct": 16, "partial": 0, "wrong": 0, "avg_score": 2.0},
+    "unanswerable": {"count": 15, "correct": 15, "partial": 0, "wrong": 0, "avg_score": 2.0},
+    "verbose": {"count": 7, "correct": 7, "partial": 0, "wrong": 0, "avg_score": 2.0}
+  },
+  "known_dataset_issues": [
+    {
+      "id": "gen-mixed_intent-0012",
+      "issue": "问题中的“本办法”没有文档名称或对话历史指代，标准答案指向国家励志奖学金办法，但仅凭问题无法唯一确定。",
+      "result": "judge_score=1，题目自包含性不足。"
+    },
+    {
+      "id": "gen-prompt_injection-0234",
+      "issue": "问题中的“第一条”没有限定具体制度，标准答案指向师范生公费教育办法，但仅凭问题无法唯一确定。",
+      "result": "judge_score=1，题目自包含性不足。"
+    }
+  ],
+  "observed_failures": [
+    {
+      "id": "gen-colloquial-0228",
+      "score": 0,
+      "layer": "generation",
+      "summary": "把综合素质评价总分 100 分误当成德育 F1 满分，并据此把 F1 满分写成 100 分。"
+    },
+    {
+      "id": "gen-multi_hop-0184",
+      "score": 0,
+      "layer": "generation",
+      "summary": "正确证据已进入候选，但回答选择了错误的废止文件，并把可回答的适用范围误判为资料未提供。"
+    },
+    {
+      "id": "gen-mixed_intent-0012",
+      "score": 1,
+      "layer": "dataset_and_query_rewrite",
+      "summary": "无历史时无法消解“本办法”，模型转而列出多个候选文件。"
+    },
+    {
+      "id": "gen-multi_hop-0262",
+      "score": 1,
+      "layer": "retrieval",
+      "summary": "修订依据回答正确，但遗漏依据文件适用范围，相关证据未完整进入最终上下文。"
+    },
+    {
+      "id": "gen-mixed_intent-0220",
+      "score": 1,
+      "layer": "query_rewrite_and_retrieval",
+      "summary": "体育部分正确，资助目的命中相近但不同的条款，遗漏勤奋学习、努力进取和全面发展。"
+    },
+    {
+      "id": "gen-prompt_injection-0234",
+      "score": 1,
+      "layer": "dataset",
+      "summary": "模型正确拒绝错误前提，但问题没有指定制度，无法唯一确定标准答案中的“第一条”。"
+    }
+  ],
+  "linked_baselines": {
+    "regular_v7": "v7-student-handbook-parent-child-baseline",
+    "challenging_v2": "v2-student-handbook-challenging-baseline"
+  },
+  "artifacts": {
+    "raw_results": "eval/results/run_20260919_153517.jsonl",
+    "judged_results": "eval/results/run_20260919_153517_judged.jsonl",
+    "judge_report": "eval/results/run_20260919_153517_judge_report.md",
+    "layer_metrics_json": "eval/reports/layer_metrics_20260919_161532.json",
+    "layer_metrics_md": "eval/reports/layer_metrics_20260919_161532.md",
+    "raw_results_sha256": "B5AB49847BC2AAAD48B9207852D0ABFEECB13E271103A9372465E3C285950DFB",
+    "judged_results_sha256": "CFCC8EA5B4EE3121A4757CA5529779C09BFD5A45DF0D86C6D2E4759B1AE98E1D",
+    "judge_report_sha256": "1CD9897582B3F4A382E323C1D25930961209EB8E4BD98B72C12C4D4C275D9FD8",
+    "layer_metrics_json_sha256": "3750AE09ACCBCF8BF151ED45022C3837A0C1A737F9C4091C2AF5BECDB4C2BAE6",
+    "layer_metrics_md_sha256": "E4EF7B3B7B899E760D3CA4AC2C9F706144C9387DA69D499087CB38511B2EA0A7"
+  }
+}

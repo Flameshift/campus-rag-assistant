@@ -1,0 +1,8 @@
+{
+  "dataset_id": "cohort-applicability-v1",
+  "created_at": "2026-09-23",
+  "total": 20,
+  "purpose": "验证年级精确匹配、通用文件、往届回退和未说明年级时的版本提示",
+  "source_baseline": "random-test-v2",
+  "expected_source_applicability": "2024级本科生"
+}

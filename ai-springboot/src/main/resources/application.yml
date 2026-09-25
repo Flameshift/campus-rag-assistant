@@ -1,0 +1,50 @@
+# Spring Boot 业务网关配置。
+# 开发默认使用 H2 文件库；生产切换 MySQL 时修改 datasource 配置即可。
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ai-springboot
+  mvc:
+    async:
+      # RAG 检索和 Rerank 可能超过默认 30 秒。
+      request-timeout: 600s
+  servlet:
+    multipart:
+      # 单文件最大 50MB，批量请求总大小最大 200MB。
+      max-file-size: 50MB
+      max-request-size: 200MB
+  datasource:
+    url: jdbc:h2:file:./data/ai_history;MODE=MySQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+# Python AI 服务地址（知识库 / RAG / LLM）。
+ai:
+  python:
+    base-url: http://127.0.0.1:8000
+  internal-auth:
+    secret: ${AI_INTERNAL_AUTH_SECRET:local-dev-internal-auth-secret}
+
+# 登录令牌有效期。
+auth:
+  bootstrap-admin-username: ${AI_BOOTSTRAP_ADMIN_USERNAME:admin}
+  token-ttl-days: 7
+  # 每天凌晨 3 点清理过期 Token。
+  token-cleanup-cron: "0 0 3 * * *"
+
+# 游客短期记忆会话 Cookie。生产环境必须覆盖默认 secret。
+security:
+  guest-session-secret: ${AI_GUEST_SESSION_SECRET:local-dev-guest-session-secret}
+  guest-session-ttl-hours: ${AI_GUEST_SESSION_TTL_HOURS:72}
+  guest-session-secure: ${AI_GUEST_SESSION_SECURE:false}

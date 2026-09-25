@@ -1,0 +1,92 @@
+{
+  "baseline_id": "v3-student-handbook-semantic-dedup",
+  "created_at": "2026-09-12",
+  "description": "学生手册 RAG 第三版基线：BM25 + 向量混合检索，并启用语义去重。",
+  "previous_baseline": "v2-student-handbook-hybrid",
+  "dataset": {
+    "path": "eval/student_handbook_questions.jsonl",
+    "version": "v1",
+    "questions": 77,
+    "answerable": 72,
+    "unanswerable": 5,
+    "sha256": "c4d4fb9d38960e064ad08d48bcf9fd3f9e0b9c2c97ee76c48e29f76cfbb06830"
+  },
+  "knowledge_base": {
+    "canonical_chunks": 278,
+    "duplicate_records": 1,
+    "vector_store": "Chroma",
+    "distance": "cosine",
+    "vector_dir": "data/chroma_qwen",
+    "embedding_model": "qwen3.7-text-embedding-flash",
+    "embedding_dim": 1024,
+    "embedding_batch_size": 25
+  },
+  "models": {
+    "answer_llm": "deepseek-flash",
+    "judge_llm": "deepseek-chat"
+  },
+  "retrieval": {
+    "type": "hybrid_bm25_vector",
+    "bm25": true,
+    "rerank": false,
+    "top_k": 5,
+    "retrieve_candidates": 10,
+    "bm25_weight": 0.4,
+    "vector_weight": 0.6
+  },
+  "semantic_dedup": {
+    "enabled": true,
+    "threshold": 0.75,
+    "gray_low": 0.6,
+    "top_k": 3,
+    "llm_confirm": true,
+    "judge_model": "deepseek-chat",
+    "score_type": "cosine_similarity",
+    "verified_high_confidence_similarity": 0.8427,
+    "verified_gray_zone_similarity": 0.7403,
+    "behavior": "高置信直接去重；灰区由 LLM 判断候选是否已被已有内容覆盖；重复只写 chunk 记录，不写入向量库"
+  },
+  "metrics": {
+    "total": 77,
+    "correct": 74,
+    "correct_rate": 0.961,
+    "partial": 3,
+    "partial_rate": 0.039,
+    "wrong": 0,
+    "wrong_rate": 0.0,
+    "unanswerable_total": 5,
+    "unanswerable_correct_refusal": 5,
+    "avg_latency_seconds": 11.93,
+    "legacy_keyword_fact_coverage": 0.22,
+    "latency_note": "本轮外部模型接口出现多次 40-50 秒响应，延迟数据不代表语义去重带来的开销"
+  },
+  "by_type": {
+    "fact": { "count": 42, "correct": 41, "avg_score": 1.976 },
+    "multi_hop": { "count": 13, "correct": 12, "avg_score": 1.923 },
+    "table": { "count": 10, "correct": 10, "avg_score": 2.0 },
+    "unanswerable": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "comparison": { "count": 4, "correct": 4, "avg_score": 2.0 },
+    "procedure": { "count": 3, "correct": 2, "avg_score": 1.667 }
+  },
+  "partial_items": [
+    { "id": "sh-009", "type": "fact", "reason": "添加了标准答案未提及的处分等级和期限细节" },
+    { "id": "sh-028", "type": "procedure", "reason": "遗漏5日内答复是否受理，复查时限表述不准确" },
+    { "id": "sh-060", "type": "multi_hop", "reason": "遗漏必修课专业前10%、综合考评班级前10%等条件" }
+  ],
+  "comparison_vs_v2": {
+    "correct_rate_delta": 0.0,
+    "correct_delta": 0,
+    "partial_delta": 0,
+    "wrong_delta": 0,
+    "avg_latency_delta_seconds": 8.24,
+    "latency_delta_note": "外部接口波动导致，不作为性能回归依据"
+  },
+  "artifacts": {
+    "raw_results": "eval/results/run_20260912_201020.jsonl",
+    "judged_results": "eval/results/run_20260912_201020_judged.jsonl",
+    "judge_report": "eval/results/run_20260912_201020_judge_report.md",
+    "comparison_report": "eval/results/run_20260912_201020_judged_vs_v2.md",
+    "raw_results_sha256": "3470c690f92c1f66cff4310b4331c74a71558d3c85940fc3c3d93e3364c75571",
+    "judged_results_sha256": "237bc54ad621908630323d07f4715f31f89f5cfa7f682a4c444b8dc819e855ed"
+  }
+}

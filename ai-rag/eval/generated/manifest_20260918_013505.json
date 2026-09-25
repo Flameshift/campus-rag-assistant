@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-09-18T01:35:05.717541",
+  "seed": 42,
+  "target": 2,
+  "types": [
+    "fact"
+  ],
+  "model": "deepseek-chat",
+  "workers": 1,
+  "knowledge_chunks": 714,
+  "generated": 2,
+  "verified": 2,
+  "hidden": 1,
+  "random": 1,
+  "rejected": 0,
+  "generation_errors": [],
+  "verification_errors": [],
+  "duration_seconds": 3.34,
+  "artifacts": {
+    "pool": "D:\\BaiduNetdiskDownload\\ai助手\\code\\ai-rag\\eval\\generated\\candidate_pool_20260918_013505.jsonl",
+    "random": "D:\\BaiduNetdiskDownload\\ai助手\\code\\ai-rag\\eval\\generated\\random_candidates_20260918_013505.jsonl",
+    "hidden": "D:\\BaiduNetdiskDownload\\ai助手\\code\\ai-rag\\eval\\generated\\hidden_candidates_20260918_013505.jsonl",
+    "rejected": "D:\\BaiduNetdiskDownload\\ai助手\\code\\ai-rag\\eval\\generated\\rejected_20260918_013505.jsonl"
+  }
+}

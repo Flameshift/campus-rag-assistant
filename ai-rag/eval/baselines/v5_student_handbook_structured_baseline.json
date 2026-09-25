@@ -1,0 +1,104 @@
+{
+  "baseline_id": "v5-student-handbook-structured",
+  "created_at": "2026-09-13",
+  "description": "学生手册 RAG 第五版基线：结构化分块、BM25 + 向量粗筛、Rerank Top-5 和同文件相邻分块扩展。",
+  "previous_baseline": "v4-student-handbook-rerank",
+  "dataset": {
+    "path": "eval/student_handbook_questions.jsonl",
+    "version": "v1",
+    "questions": 77,
+    "answerable": 72,
+    "unanswerable": 5,
+    "sha256": "c4d4fb9d38960e064ad08d48bcf9fd3f9e0b9c2c97ee76c48e29f76cfbb06830"
+  },
+  "knowledge_base": {
+    "source_files": 1,
+    "canonical_chunks": 714,
+    "duplicate_records": 0,
+    "vector_store": "Chroma",
+    "distance": "cosine",
+    "embedding_model": "qwen3.7-text-embedding-flash",
+    "embedding_dim": 1024,
+    "embedding_batch_size": 25,
+    "parser_version": "v2",
+    "chunker_version": "v2"
+  },
+  "models": {
+    "answer_llm": "deepseek-flash",
+    "judge_llm": "deepseek-chat",
+    "rerank_model": "qwen3.7-text-rerank"
+  },
+  "retrieval": {
+    "type": "structured_chunking_hybrid_then_rerank_and_neighbor_expansion",
+    "structured_chunking": true,
+    "rerank": true,
+    "neighbor_expansion": true,
+    "neighbor_window": 1,
+    "neighbor_max_added": 3,
+    "top_k": 5,
+    "retrieve_candidates": 20,
+    "rerank_candidates": 20,
+    "bm25_weight": 0.4,
+    "vector_weight": 0.6
+  },
+  "metrics": {
+    "total": 77,
+    "correct": 75,
+    "correct_rate": 0.974,
+    "partial": 2,
+    "partial_rate": 0.026,
+    "wrong": 0,
+    "wrong_rate": 0.0,
+    "unanswerable_total": 5,
+    "unanswerable_correct_refusal": 5,
+    "avg_latency_seconds": 86.2155,
+    "legacy_keyword_fact_coverage": 0.245,
+    "latency_note": "本轮 DashScope 排队严重，单题约 84-94 秒；延迟不代表结构化分块开销"
+  },
+  "by_type": {
+    "fact": { "count": 42, "correct": 42, "avg_score": 2.0 },
+    "multi_hop": { "count": 13, "correct": 12, "avg_score": 1.923 },
+    "table": { "count": 10, "correct": 10, "avg_score": 2.0 },
+    "unanswerable": { "count": 5, "correct": 5, "avg_score": 2.0 },
+    "comparison": { "count": 4, "correct": 3, "avg_score": 1.75 },
+    "procedure": { "count": 3, "correct": 3, "avg_score": 2.0 }
+  },
+  "partial_items": [
+    {
+      "id": "sh-010",
+      "type": "fact",
+      "reason": "核心处理方式正确，但补充了重修文件下发时间、补考时间等标准答案未列出的细节"
+    },
+    {
+      "id": "sh-048",
+      "type": "comparison",
+      "reason": "包含标准答案的关键事实，但额外列出了多项其他取消资格情形，超出问题范围"
+    }
+  ],
+  "resolved_items": [
+    {
+      "id": "sh-028",
+      "reason": "相邻分块扩展补齐5日内答复是否受理等申诉流程"
+    },
+    {
+      "id": "sh-060",
+      "reason": "结构化条文和相邻分块扩展补齐必修课专业前10%、综合考评班级前10%"
+    }
+  ],
+  "comparison_vs_v4": {
+    "correct_rate_delta": 0.013,
+    "correct_delta": 1,
+    "partial_delta": -1,
+    "wrong_delta": 0,
+    "avg_latency_delta_seconds": 82.0016,
+    "latency_delta_note": "外部接口排队造成，不作为性能回归结论"
+  },
+  "artifacts": {
+    "raw_results": "eval/results/run_20260913_162324.jsonl",
+    "judged_results": "eval/results/run_20260913_162324_judged.jsonl",
+    "judge_report": "eval/results/run_20260913_162324_judge_report.md",
+    "comparison_report": "eval/results/run_20260913_162324_judged_vs_v4.md",
+    "raw_results_sha256": "dc30bb47e7bfd9f42ea993ec14f99a65aee0817950c450fd7c41ae3dab68aafd",
+    "judged_results_sha256": "72977a4d967ca0d7996ffc72137edcc7fadc7f6def5803f980bfef28e18a8cbc"
+  }
+}
