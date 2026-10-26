@@ -10,6 +10,7 @@ import re
 
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
+from pydantic import SecretStr
 
 from . import config
 from .answer_validator import answer_validator
@@ -150,10 +151,10 @@ class AnswerVerifier:
         if self._llm is None:
             self._llm = ChatOpenAI(
                 model=config.ANSWER_VERIFICATION_MODEL,
-                api_key=config.LLM_API_KEY,
+                api_key=SecretStr(config.LLM_API_KEY),
                 base_url=config.LLM_BASE_URL,
                 temperature=0,
-                max_tokens=1600,
+                max_completion_tokens=1600,
                 timeout=config.ANSWER_VERIFICATION_TIMEOUT,
                 max_retries=1,
             )

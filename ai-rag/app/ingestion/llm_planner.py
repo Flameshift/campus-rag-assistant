@@ -7,6 +7,7 @@ import re
 from collections import OrderedDict
 
 from langchain_openai import ChatOpenAI
+from pydantic import SecretStr
 
 from .. import config
 from .blocks import DocumentBlock
@@ -53,10 +54,10 @@ class StructureLLMPlanner:
         if self._llm is None:
             self._llm = ChatOpenAI(
                 model=config.STRUCTURE_LLM_MODEL,
-                api_key=config.LLM_API_KEY,
+                api_key=SecretStr(config.LLM_API_KEY),
                 base_url=config.LLM_BASE_URL,
                 temperature=0,
-                max_tokens=1000,
+                max_completion_tokens=1000,
                 timeout=60,
                 max_retries=1,
             )

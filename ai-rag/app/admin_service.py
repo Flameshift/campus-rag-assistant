@@ -129,7 +129,7 @@ class AdminDocumentService:
             source_ids = [version.id for version in versions]
             for source_id in source_ids:
                 try:
-                    rag_service.vectorstore.delete(
+                    rag_service.delete_vectors(
                         where={"source_file_id": {"$eq": source_id}}
                     )
                 except Exception:
@@ -216,7 +216,7 @@ class AdminDocumentService:
                 db.commit()
 
             try:
-                rag_service.vectorstore.delete(
+                rag_service.delete_vectors(
                     where={"source_file_id": {"$eq": document_id}}
                 )
                 vector_ids = rag_service.add_documents(documents)

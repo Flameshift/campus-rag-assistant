@@ -10,6 +10,7 @@ import re
 from collections import OrderedDict
 
 from langchain_openai import ChatOpenAI
+from pydantic import SecretStr
 
 from . import config
 from .query_normalizer import normalize_query
@@ -156,10 +157,10 @@ class QueryRewriter:
         if self._llm is None:
             self._llm = ChatOpenAI(
                 model=config.QUERY_REWRITE_MODEL,
-                api_key=config.LLM_API_KEY,
+                api_key=SecretStr(config.LLM_API_KEY),
                 base_url=config.LLM_BASE_URL,
                 temperature=0,
-                max_tokens=400,
+                max_completion_tokens=400,
                 timeout=config.QUERY_REWRITE_TIMEOUT,
                 max_retries=1,
             )

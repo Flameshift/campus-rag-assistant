@@ -7,10 +7,11 @@ import re
 
 from fastapi import HTTPException
 from langchain_openai import ChatOpenAI
+from pydantic import SecretStr
 from sqlalchemy.orm import Session
 
 from . import config, dedup, models
-from .document_loader import load_documents_from_file
+from .ingestion.service import ingestion_service
 from .rag_service import rag_service
 
 logger = logging.getLogger(__name__)
@@ -68,10 +69,16 @@ class UploadService:
         if existing_file is not None:
             # 只有处理成功的文件才算“已存在”；失败文件允许重试。
             if existing_file.status == "done":
+                if target_source is not None and not target_document_id:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="目标版本缺少 document_id",
+                    )
                 if (
                     target_source is not None
                     and existing_file.document_id == target_document_id
                 ):
+                    assert target_document_id is not None
                     self._apply_document_metadata(existing_file, document_metadata)
                     self._activate_version(existing_file, target_document_id)
                 job.status = "done"
@@ -126,7 +133,7 @@ class UploadService:
 
         try:
             # 新链路已经完成结构分析、规则分块和必要的 LLM 兜底。
-            chunks = load_documents_from_file(filename, content)
+            chunks = ingestion_service.load_and_split(filename, content)
             candidates = []
             skipped = 0
             seen_hashes: set[str] = set()
@@ -173,7 +180,7 @@ class UploadService:
             new_docs = []
             added = 0
             if candidates:
-                vectors = rag_service.embeddings.embed_documents(
+                vectors = rag_service.embed_documents(
                     [doc.page_content for doc in candidates]
                 )
                 for doc, vector in zip(candidates, vectors):
@@ -330,7 +337,7 @@ class UploadService:
         if not config.SEMANTIC_DEDUP_ENABLED:
             return None
         try:
-            results = rag_service.vectorstore.similarity_search_by_vector_with_relevance_scores(
+            results = rag_service.search_by_vector_with_scores(
                 vector,
                 k=config.SEMANTIC_DEDUP_TOP_K,
             )
@@ -365,10 +372,10 @@ class UploadService:
         if self._judge_llm is None:
             self._judge_llm = ChatOpenAI(
                 model=config.SEMANTIC_DEDUP_JUDGE_MODEL,
-                api_key=config.LLM_API_KEY,
+                api_key=SecretStr(config.LLM_API_KEY),
                 base_url=config.LLM_BASE_URL,
                 temperature=0,
-                max_tokens=200,
+                max_completion_tokens=200,
                 timeout=60,
                 max_retries=1,
             )
@@ -417,7 +424,9 @@ class UploadService:
         hashes = [chunk.content_hash for chunk in chunks]
         if hashes:
             try:
-                rag_service.vectorstore.delete(where={"content_hash": {"$in": hashes}})
+                rag_service.delete_vectors(
+                    where={"content_hash": {"$in": hashes}}
+                )
             except Exception:
                 # 向量不存在或版本不支持 where 删除时忽略，继续清理数据库。
                 pass

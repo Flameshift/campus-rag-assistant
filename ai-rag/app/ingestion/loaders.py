@@ -251,8 +251,15 @@ def _blocks_from_docx(filename: str, content: bytes) -> list[DocumentBlock]:
             text = paragraph.text.strip()
             if not text:
                 continue
-            level = _docx_heading_level(paragraph.style.name if paragraph.style else "")
-            block_type = "heading" if level else ("list" if "list" in (paragraph.style.name or "").lower() else "paragraph")
+            style_name = getattr(paragraph.style, "name", "") or ""
+            level = _docx_heading_level(style_name)
+            block_type = (
+                "heading"
+                if level
+                else "list"
+                if "list" in style_name.lower()
+                else "paragraph"
+            )
             blocks.append(
                 DocumentBlock(
                     content=text,

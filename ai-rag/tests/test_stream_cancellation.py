@@ -2,12 +2,16 @@
 
 import threading
 import unittest
+from typing import Any, cast
+from types import SimpleNamespace
 
 from starlette.requests import ClientDisconnect
 
-from app.main import CancellableStreamingResponse
-from app.rag_service import RagService, StreamCancelled
+from app.rag.contracts import PreparedChat
+from app.rag.pipeline import RagPipeline
+from app.rag_service import StreamCancelled
 from app.short_term_memory import MemoryContext
+from app.streaming import CancellableStreamingResponse
 
 
 class _FakeChunk:
@@ -31,28 +35,32 @@ class _FakeChatChain:
 
 class StreamCancellationTests(unittest.TestCase):
     def _build_service(self, chain: _FakeChatChain, saved: list[tuple[str, str]]):
-        service = object.__new__(RagService)
+        service = cast(Any, object.__new__(RagPipeline))
         service.chat_chain = chain
         service._load_memory_context = lambda *_args, **_kwargs: MemoryContext(
             "thread:test",
             [{"role": "user", "content": "history"}],
             True,
         )
-        service._prepare_chat = lambda *_args, **_kwargs: {
-            "docs": [],
-            "sources": [],
-            "timings": {},
-            "input_data": {
+        prepared = PreparedChat(
+            docs=[],
+            sources=[],
+            timings={},
+            rewrite={},
+            query_plan={},
+            retrieval_scope={},
+            applicability_notice="",
+            coverage={},
+            input_data={
                 "docs": [],
                 "question": "question",
                 "history": "",
                 "retrieval_query": "question",
             },
-            "query_plan": {},
-            "coverage": {},
-            "retrieval_scope": {},
-            "applicability_notice": "",
-        }
+        )
+        service.retrieval = SimpleNamespace(
+            prepare_chat=lambda *_args, **_kwargs: prepared
+        )
         service._save_memory_turn = lambda _thread_id, question, answer, _timings: saved.append(
             (question, answer)
         )

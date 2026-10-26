@@ -141,14 +141,26 @@ def _merge_segment(
         for _, document in segment
     ]
     page_starts = [
-        int(document.metadata.get("page_start", document.metadata.get("page")))
+        int(page_start)
         for _, document in segment
-        if document.metadata.get("page_start", document.metadata.get("page")) is not None
+        if (
+            page_start := document.metadata.get(
+                "page_start",
+                document.metadata.get("page"),
+            )
+        )
+        is not None
     ]
     page_ends = [
-        int(document.metadata.get("page_end", document.metadata.get("page")))
+        int(page_end)
         for _, document in segment
-        if document.metadata.get("page_end", document.metadata.get("page")) is not None
+        if (
+            page_end := document.metadata.get(
+                "page_end",
+                document.metadata.get("page"),
+            )
+        )
+        is not None
     ]
     evidence_id = hashlib.sha256(
         (
