@@ -41,6 +41,9 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns(
                         "/api/admin/**",
                         "/api/upload");
+        // SSE 问答允许登录用户和游客访问：
+        // 有 Token 时由 OptionalTokenAuthInterceptor 读取用户身份；
+        // 无 Token 时保留请求，由 GuestSessionService 使用签名 Cookie 创建游客上下文。
         registry.addInterceptor(optionalTokenAuthInterceptor)
                 .addPathPatterns(
                         "/api/chat",

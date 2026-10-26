@@ -62,6 +62,25 @@ class PromptTests(unittest.TestCase):
         self.assertIn("第 10-11 页", answer)
         self.assertIn("第一章 > 第二条", answer)
 
+    def test_source_footer_shortens_long_pdf_derived_section_path(self):
+        documents = [
+            Document(
+                page_content="测试内容",
+                metadata={
+                    "source": "学生手册.pdf",
+                    "section_path": (
+                        "第二章 学制与学习年限 > "
+                        "第二条 本科标准学制为四年，按四年制定培养方案。在校修读"
+                    ),
+                },
+            )
+        ]
+
+        footer = append_source_footer("回答内容 [证据1]", documents)
+
+        self.assertIn("第二条 本科标准学制为四年", footer)
+        self.assertNotIn("在校修读", footer)
+
     def test_source_footer_only_lists_cited_evidence(self):
         documents = [
             Document(page_content="一", metadata={"source": "a.pdf", "page": 1}),

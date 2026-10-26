@@ -65,8 +65,21 @@ public class AiGatewayService {
         return send(builder.build());
     }
 
-    /** 流式转发：把 Python 的 SSE 字节流原样复制给前端。 */
+    /**
+     * 将 Python 的 SSE 字节流逐步复制到 Spring 的响应流。
+     *
+     * 这是 /api/chat/stream 真正处理流数据的方法，执行四个动作：
+     * 1. 构造带内部签名的 POST 请求；
+     * 2. 用 InputStream 接收 Python 的 SSE，避免等待完整响应；
+     * 3. 每读到一块字节就写浏览器并 flush，同时复制到 captured；
+     * 4. 流结束后把 captured 中的 SSE 转成完整答案并返回给 Controller。
+     *
+     * 返回值不是 SSE payload，而是供 Spring 会话库保存的完整回答文本。
+     */
     public String pipePostStream(String pythonPath, String jsonBody, OutputStream sink) throws IOException {
+        // [1/4] 构造内部请求。
+        // Spring 访问 Python 必须携带 HMAC；Python 会校验时间戳、HTTP 方法和请求路径，
+        // 防止绕过 Spring 网关直接调用内部 RAG 接口。
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(pythonBaseUrl + pythonPath))
                 .header("Content-Type", "application/json; charset=utf-8");
         addInternalAuth(builder, "POST", pythonPath);
@@ -74,31 +87,55 @@ public class AiGatewayService {
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody == null ? "" : jsonBody, StandardCharsets.UTF_8))
                 .build();
         try {
+            // [2/4] 获取 Python 响应流。
+            // 这里必须使用 ofInputStream()；如果改用 ofString()，Java 会等整个答案生成完
+            // 才返回，前端也就失去了逐 token 展示能力。
             HttpResponse<InputStream> response = httpClient.send(request, BodyHandlers.ofInputStream());
             if (response.statusCode() >= 400) {
                 throw new IOException("Python 服务返回状态码: " + response.statusCode());
             }
+
+            // [3/4] 一边实时转发，一边复制一份完整 SSE 原文。
+            // captured 不参与前端响应，只用于流结束后恢复完整回答。
             ByteArrayOutputStream captured = new ByteArrayOutputStream();
             try (InputStream in = response.body()) {
                 byte[] buffer = new byte[8192];
                 int read;
                 while ((read = in.read(buffer)) != -1) {
+                    // 先把本次读到的字节写入浏览器输出流。
                     sink.write(buffer, 0, read);
-                    // StreamingResponseBody 需要显式 flush，否则 Tomcat 会等响应结束后
-                    // 才把 SSE 内容交给浏览器。
+
+                    // 立即 flush，避免 Tomcat 或 Spring 把多个 token 合并到响应结束时才发送。
                     sink.flush();
+
+                    // 同一块数据再复制到 captured，供流结束后的会话落库使用。
                     captured.write(buffer, 0, read);
                 }
             }
+
+            // [4/4] Python 流已结束，将 SSE 事件还原成纯回答文本。
             return extractStreamAnswer(captured.toString(StandardCharsets.UTF_8));
         } catch (InterruptedException ex) {
+            // 保留线程中断标记，让上层线程池能够正确感知任务已中断。
             Thread.currentThread().interrupt();
             throw new IOException("转发流式请求被中断", ex);
         }
     }
 
+    /**
+     * 从完整 SSE payload 中提取最终回答，供 Spring 会话库保存。
+     *
+     * 只处理对回答正文有影响的事件：
+     * - token：追加增量文本；
+     * - replace：用完整复核结果替换此前 token；
+     * - error：转换为 IOException，交给控制器和前端降级处理。
+     *
+     * sources、timings、confidence 等事件不需要进入会话正文。
+     */
     private String extractStreamAnswer(String payload) throws IOException {
         StringBuilder answer = new StringBuilder();
+
+        // SSE 以“data: JSON”行传递事件；空行和其他字段不参与答案提取。
         for (String rawLine : payload.split("\\R")) {
             String line = rawLine.trim();
             if (!line.startsWith("data:")) {
@@ -110,11 +147,17 @@ public class AiGatewayService {
             }
             JsonNode event = objectMapper.readTree(data);
             String type = event.path("type").asText("");
+
+            // token 表示增量片段，按到达顺序追加。
             if ("token".equals(type)) {
                 answer.append(event.path("content").asText(""));
+
+            // replace 表示 Python 对前文进行整段替换，例如最终复核后覆盖草稿。
             } else if ("replace".equals(type)) {
                 answer.setLength(0);
                 answer.append(event.path("content").asText(""));
+
+            // error 是业务流中的失败事件，需要让 Controller 感知而不是保存半截回答。
             } else if ("error".equals(type)) {
                 throw new IOException(event.path("message").asText("流式生成失败"));
             }
@@ -159,7 +202,14 @@ public class AiGatewayService {
         }
     }
 
+    /**
+     * 生成 Spring Boot -> Python 的内部请求签名。
+     *
+     * 签名内容固定为：时间戳 + 换行 + HTTP 方法 + 换行 + 请求路径。
+     * 这样 Python 端可以同时验证请求时效和请求内容，避免把 RAG 服务暴露为公网接口。
+     */
     private void addInternalAuth(HttpRequest.Builder builder, String method, String path) {
+        // 时间戳用于防止旧请求被重复利用，签名用于证明请求确实来自 Spring Boot。
         String timestamp = String.valueOf(Instant.now().getEpochSecond());
         String payload = timestamp + "\n" + method.toUpperCase() + "\n" + path;
         builder.header("X-Internal-Timestamp", timestamp);

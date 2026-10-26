@@ -37,12 +37,15 @@ public class GuestSessionService {
 
     /** 读取有效 Cookie；不存在或无效时创建新游客会话并写入 Cookie。 */
     public String resolve(HttpServletRequest request, HttpServletResponse response) {
+        // 优先复用浏览器已有且签名有效的游客身份，使同一浏览器能继续访问自己的 Checkpoint。
         String token = findCookie(request);
         Optional<String> verified = verifyToken(token);
         if (verified.isPresent()) {
             return verified.get();
         }
 
+        // Cookie 缺失、过期或签名不合法时创建新游客身份。
+        // HttpOnly 防止脚本读取，SameSite=Lax 降低跨站请求伪造风险。
         String sessionId = UUID.randomUUID().toString().replace("-", "");
         String newToken = createToken(sessionId);
         String cookie = COOKIE_NAME + "=" + newToken
@@ -63,15 +66,20 @@ public class GuestSessionService {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
+
+        // 格式固定为 sessionId.expiresAt.signature，三段必须完整。
         String[] parts = token.split("\\.");
         if (parts.length != 3) {
             return Optional.empty();
         }
         try {
+            // 先检查过期时间，再验证签名，降低无效 Token 进入后续流程的概率。
             long expiresAt = Long.parseLong(parts[1]);
             if (expiresAt < Instant.now().getEpochSecond()) {
                 return Optional.empty();
             }
+
+            // 重新计算签名，并使用常量时间比较，避免客户端伪造游客身份。
             String payload = parts[0] + "." + parts[1];
             byte[] expected = sign(payload).getBytes(StandardCharsets.UTF_8);
             byte[] actual = parts[2].getBytes(StandardCharsets.UTF_8);

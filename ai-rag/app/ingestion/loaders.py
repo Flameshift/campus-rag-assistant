@@ -41,7 +41,9 @@ def _heading_info(text: str) -> tuple[int, str] | None:
             level = 2
         else:
             level = 3
-        return level, normalize_document_text(f"{marker} {title}")
+        title = re.split(r"[，,。！？；;]", title or "", maxsplit=1)[0].strip()
+        title = title[:32].rstrip()
+        return level, normalize_document_text(f"{marker} {title}".strip())
 
     # 单级数字和中文编号通常是条款下的列表项，不能升级为章节标题。
     numbered = re.match(r"^((?:\d+\.)+\d+)\s+(.+)$", text)

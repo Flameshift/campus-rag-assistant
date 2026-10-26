@@ -69,6 +69,30 @@ def _record_timing(name: str, started_at: float) -> None:
         metrics[name] = round((time.perf_counter() - started_at) * 1000, 2)
 
 
+class StreamCancelled(Exception):
+    """客户端已断开时用于终止流式生成内部流程。"""
+
+    def __init__(self, stage: str) -> None:
+        super().__init__(f"stream cancelled at {stage}")
+        self.stage = stage
+
+
+def _raise_if_cancelled(
+    cancel_event: threading.Event | None,
+    stage: str,
+    request_id: str | None = None,
+) -> None:
+    """在耗时阶段边界检查取消标记，并立即停止后续生成。"""
+    if cancel_event is None or not cancel_event.is_set():
+        return
+    logging.getLogger(__name__).info(
+        "chat_stream_cancelled request_id=%s stage=%s",
+        request_id or "-",
+        stage,
+    )
+    raise StreamCancelled(stage)
+
+
 class TimedEmbeddings(Embeddings):
     """包装 Embedding，记录查询向量化和文档向量化耗时。"""
 
@@ -327,18 +351,21 @@ class RagService:
         question: str,
         history: List[dict],
         request_id: str | None = None,
+        cancel_event: threading.Event | None = None,
     ) -> dict:
         """普通/流式问答共用的预处理：检索片段、整理来源与 Prompt 输入。"""
         trace = RagTrace(request_id)
         timings: dict[str, float] = {}
         timing_token = _TIMING_CONTEXT.set(timings)
         try:
+            _raise_if_cancelled(cancel_event, "prepare_start", request_id)
             rewrite_started = time.perf_counter()
             rewrite = self.query_rewriter.rewrite(question, history)
             timings["query_rewrite_ms"] = round(
                 (time.perf_counter() - rewrite_started) * 1000,
                 2,
             )
+            _raise_if_cancelled(cancel_event, "after_rewrite", request_id)
             query_plan = (
                 query_planner.plan(question, rewrite, history)
                 if config.QUERY_PLANNER_ENABLED
@@ -348,6 +375,7 @@ class RagService:
                     subquestions=[rewrite["query"]],
                 )
             )
+            _raise_if_cancelled(cancel_event, "after_query_plan", request_id)
             retrieval_queries = list(query_plan.retrieval_queries or [rewrite["query"]])
             if not config.MULTI_QUERY_ENABLED:
                 retrieval_queries = retrieval_queries[:1]
@@ -370,6 +398,7 @@ class RagService:
                 )
 
             if config.QUERY_CLARIFICATION_ENABLED and query_plan.needs_clarification:
+                _raise_if_cancelled(cancel_event, "before_clarification", request_id)
                 clarification = query_plan.clarification_question or (
                     "请补充具体事项或文件名称，我再按对应条款回答。"
                 )
@@ -451,12 +480,17 @@ class RagService:
                 }
 
             # 混合检索先召回较多候选，再由 Rerank 精排，最后取 TOP_K 条给 LLM。
+            _raise_if_cancelled(cancel_event, "before_retrieval", request_id)
             retrieval_started = time.perf_counter()
+
             def retrieve_one(retrieval_query: str) -> list[Document]:
+                _raise_if_cancelled(cancel_event, "retrieval_worker", request_id)
                 try:
                     return self.retriever.invoke(retrieval_query)[
                         : config.RETRIEVE_CANDIDATES
                     ]
+                except StreamCancelled:
+                    raise
                 except Exception as exc:
                     logging.getLogger(__name__).warning(
                         "查询召回失败 query=%s error=%s",
@@ -509,6 +543,7 @@ class RagService:
                 )
             else:
                 raw_candidates = result_sets[0] if result_sets else []
+            _raise_if_cancelled(cancel_event, "after_retrieval", request_id)
             trace.record_stage("retrieval_raw", raw_candidates)
             candidates = raw_candidates[: config.RERANK_CANDIDATES]
             candidates = self._exclude_disabled_documents(
@@ -521,6 +556,7 @@ class RagService:
             timings["retrieval_query_count"] = float(len(retrieval_queries))
             timings["query_embedding_batch_used"] = 1.0 if batch_used else 0.0
 
+            _raise_if_cancelled(cancel_event, "before_rerank", request_id)
             rerank_started = time.perf_counter()
             # 检索查询已经过消歧、规则归一并保留关键约束，Rerank 使用同一查询。
             rerank_query = retrieval_question
@@ -530,7 +566,9 @@ class RagService:
             docs = reranked[: config.TOP_K]
             timings["rerank_ms"] = round((time.perf_counter() - rerank_started) * 1000, 2)
             timings["reranked_count"] = float(len(docs))
+            _raise_if_cancelled(cancel_event, "after_rerank", request_id)
 
+            _raise_if_cancelled(cancel_event, "before_coverage_expansion", request_id)
             coverage_started = time.perf_counter()
             docs = self._fill_evidence_coverage(
                 docs,
@@ -544,6 +582,7 @@ class RagService:
             )
 
             # 父级扩展优先恢复完整条款、表格或记录组；相邻扩展只作为最后兜底。
+            _raise_if_cancelled(cancel_event, "before_parent_expansion", request_id)
             parent_started = time.perf_counter()
             docs = self._expand_parent_chunks(docs)
             trace.record_stage("parent_expansion", docs)
@@ -562,6 +601,7 @@ class RagService:
             )
             timings["expanded_count"] = float(len(docs))
 
+            _raise_if_cancelled(cancel_event, "before_evidence_build", request_id)
             docs = self._enrich_document_metadata(docs)
             docs = build_evidence_objects(docs)
             trace.record_stage("evidence_objects", docs)
@@ -575,6 +615,7 @@ class RagService:
             timings["subquestion_count"] = float(coverage["subquestion_count"])
             timings["subquestion_covered_count"] = float(coverage["covered_count"])
 
+            _raise_if_cancelled(cancel_event, "before_prompt_build", request_id)
             prompt_started = time.perf_counter()
             sources = [{"content": doc.page_content, "metadata": doc.metadata} for doc in docs]
             # 只取最近 6 条历史，避免上下文过长；为空时展示“（无）”。
@@ -1035,6 +1076,7 @@ class RagService:
         history: List[dict],
         thread_id: str | None = None,
         history_trusted: bool = False,
+        cancel_event: threading.Event | None = None,
     ):
         """流式 RAG 问答事件生成器。
 
@@ -1043,16 +1085,22 @@ class RagService:
         {"type": "error", "message": "..."}   （生成中途失败时）
         {"type": "sources", "sources": [...]}  （回答结束后）
         {"type": "timings", "timings": {...}, "request_id": "..."}
+
+        cancel_event 由 HTTP 层在客户端断开时设置。生成器会在高耗时阶段边界
+        主动检查该标记，并抛出 StreamCancelled 终止后续检索、生成和落库。
         """
         request_id = uuid.uuid4().hex[:12]
+        _raise_if_cancelled(cancel_event, "stream_start", request_id)
         total_started = time.perf_counter()
         memory_started = time.perf_counter()
         memory_context = self._load_memory_context(thread_id, history, history_trusted)
         memory_load_ms = round((time.perf_counter() - memory_started) * 1000, 2)
+        _raise_if_cancelled(cancel_event, "after_memory_load", request_id)
         prepared = self._prepare_chat(
             question,
             memory_context.messages,
             request_id=request_id,
+            cancel_event=cancel_event,
         )
         timings = prepared["timings"]
         timings["memory_load_ms"] = memory_load_ms
@@ -1060,6 +1108,7 @@ class RagService:
         applicability_notice = str(prepared.get("applicability_notice") or "")
 
         if prepared.get("clarification"):
+            _raise_if_cancelled(cancel_event, "before_clarification_yield", request_id)
             answer = prepared["clarification"]
             timings["llm_first_token_ms"] = 0.0
             timings["llm_generation_ms"] = 0.0
@@ -1067,6 +1116,7 @@ class RagService:
             confidence = self._clarification_confidence(prepared)
             yield {"type": "token", "content": answer}
             yield {"type": "sources", "sources": []}
+            _raise_if_cancelled(cancel_event, "before_clarification_memory_save", request_id)
             self._save_memory_turn(memory_context.thread_id, question, answer, timings)
             yield {"type": "timings", "timings": timings, "request_id": request_id}
             yield {"type": "confidence", "confidence": confidence}
@@ -1076,12 +1126,14 @@ class RagService:
 
         # 演示模式：模拟逐段输出，便于前端无 Key 联调。
         if self.chat_chain is None:
+            _raise_if_cancelled(cancel_event, "before_demo_generation", request_id)
             demo_text = self._demo_answer(question, prepared["docs"])
             demo_text = applicability_notice + demo_text
             demo_text = append_source_footer(demo_text, prepared["docs"])
             generation_started = time.perf_counter()
             first_token_ms = None
             for start in range(0, len(demo_text), 12):
+                _raise_if_cancelled(cancel_event, "demo_token_loop", request_id)
                 if first_token_ms is None:
                     first_token_ms = round((time.perf_counter() - generation_started) * 1000, 2)
                 yield {"type": "token", "content": demo_text[start : start + 12]}
@@ -1102,6 +1154,7 @@ class RagService:
                 applicability_scope=prepared.get("retrieval_scope"),
             )
             yield {"type": "sources", "sources": prepared["sources"]}
+            _raise_if_cancelled(cancel_event, "before_demo_memory_save", request_id)
             self._save_memory_turn(memory_context.thread_id, question, demo_text, timings)
             yield {"type": "timings", "timings": timings, "request_id": request_id}
             yield {"type": "confidence", "confidence": confidence.to_dict()}
@@ -1115,14 +1168,27 @@ class RagService:
             yield {"type": "token", "content": applicability_notice}
         first_token_ms = None
         answer_chunks: list[str] = []
+        llm_stream = None
         try:
-            for chunk in self.chat_chain.stream(prepared["input_data"]):
+            _raise_if_cancelled(cancel_event, "before_llm_stream", request_id)
+            llm_stream = self.chat_chain.stream(prepared["input_data"])
+            llm_iterator = iter(llm_stream)
+            while True:
+                # 在请求下一个 token 前检查取消，避免客户端断开后继续拉取整段回答。
+                _raise_if_cancelled(cancel_event, "llm_token_loop", request_id)
+                try:
+                    chunk = next(llm_iterator)
+                except StopIteration:
+                    break
                 content = getattr(chunk, "content", None) or ""
                 if content:
                     answer_chunks.append(content)
                     if first_token_ms is None:
                         first_token_ms = round((time.perf_counter() - generation_started) * 1000, 2)
                     yield {"type": "token", "content": content}
+        except StreamCancelled:
+            # 取消不是业务错误，不应再向前端发送 error 事件。
+            raise
         except Exception as exc:
             # 前端收到 error 事件后会清空已渲染内容并调用普通接口兜底。
             timings["llm_generation_ms"] = round(
@@ -1133,12 +1199,22 @@ class RagService:
             self._log_timings(request_id, "stream_error", timings)
             yield {"type": "error", "message": str(exc)}
             return
+        finally:
+            # 无论正常完成、模型异常还是客户端取消，都关闭底层 LLM 流。
+            close_stream = getattr(llm_stream, "close", None)
+            if callable(close_stream):
+                try:
+                    close_stream()
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("关闭 LLM 流失败: %s", exc)
 
+        _raise_if_cancelled(cancel_event, "after_llm_stream", request_id)
         timings["llm_first_token_ms"] = first_token_ms or 0.0
         timings["llm_generation_ms"] = round((time.perf_counter() - generation_started) * 1000, 2)
         answer = "".join(answer_chunks)
         repaired = False
         if answer_verifier.enabled:
+            _raise_if_cancelled(cancel_event, "before_answer_verification", request_id)
             verification_started = time.perf_counter()
             verified_answer, verification = answer_verifier.review_and_repair(
                 question=question,
@@ -1154,6 +1230,7 @@ class RagService:
             timings["answer_repaired_count"] = float(repaired)
             if repaired:
                 answer = verified_answer
+        _raise_if_cancelled(cancel_event, "before_final_response", request_id)
         timings["total_ms"] = round((time.perf_counter() - total_started) * 1000, 2)
         display_answer = applicability_notice + answer
         final_answer = append_source_footer(display_answer, prepared["docs"])
@@ -1165,6 +1242,7 @@ class RagService:
                 "".join(answer_chunks),
                 prepared["docs"],
             )
+        _raise_if_cancelled(cancel_event, "before_confidence", request_id)
         confidence = confidence_evaluator.evaluate(
             question,
             answer,
@@ -1177,6 +1255,7 @@ class RagService:
         )
         if source_footer:
             yield {"type": "token", "content": source_footer}
+        _raise_if_cancelled(cancel_event, "before_memory_save", request_id)
         self._save_memory_turn(memory_context.thread_id, question, display_answer, timings)
         yield {"type": "sources", "sources": prepared["sources"]}
         yield {"type": "timings", "timings": timings, "request_id": request_id}

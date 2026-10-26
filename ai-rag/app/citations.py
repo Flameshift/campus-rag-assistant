@@ -15,6 +15,18 @@ def _page_text(metadata: dict) -> str:
     return f"第 {start} 页"
 
 
+def _short_section_path(value: str) -> str:
+    """Trim long PDF-derived headings so source labels do not show cut-off sentences."""
+    parts = [part.strip() for part in str(value or "").split(">") if part.strip()]
+    shortened = []
+    for part in parts:
+        part = re.split(r"[，,。！？；;]", part, maxsplit=1)[0].strip()
+        if len(part) > 32:
+            part = f"{part[:32].rstrip()}…"
+        shortened.append(part)
+    return " > ".join(shortened)
+
+
 def format_evidence_header(index: int, metadata: dict) -> str:
     """生成放入 Prompt 的证据编号和来源说明。"""
     source = str(
@@ -46,7 +58,7 @@ def format_evidence_header(index: int, metadata: dict) -> str:
         label += f"，{page}"
     section_path = str(metadata.get("section_path") or "").strip()
     if section_path:
-        label += f"，章节：{section_path}"
+        label += f"，章节：{_short_section_path(section_path)}"
     return label
 
 

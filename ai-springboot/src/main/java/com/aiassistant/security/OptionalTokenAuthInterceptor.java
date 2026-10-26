@@ -24,15 +24,21 @@ public class OptionalTokenAuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
+        // /api/chat/stream 同时服务登录用户和游客，因此缺少 Authorization 时不能直接拒绝。
+        // 交给 Controller 的 prepareThreadBody() 继续创建游客上下文。
         String authorization = request.getHeader("Authorization");
         if (authorization == null || authorization.isBlank()) {
             return true;
         }
+
+        // 一旦携带 Token，就必须满足 Bearer 格式；格式错误不会被当成游客静默降级。
         if (!authorization.toLowerCase().startsWith("bearer ")) {
             return reject(response, "Authorization 格式错误");
         }
 
         try {
+            // 校验 Token 后把用户身份写入 Request Attribute。
+            // Controller 通过 USER_ATTR 区分登录用户；游客请求不会设置该属性。
             User user = authService.requireUserByToken(authorization.substring(7).trim());
             request.setAttribute(TokenAuthInterceptor.USER_ATTR, user.getId());
             request.setAttribute(TokenAuthInterceptor.USERNAME_ATTR, user.getUsername());

@@ -191,36 +191,53 @@ async function deleteConversation(id) {
   }
 }
 
+/**
+ * 发送一轮用户消息，并处理从 SSE 流式返回到异常降级的完整流程。
+ *
+ * 主要阶段：
+ * 1. 校验输入和当前会话状态，避免空消息或重复发送。
+ * 2. 先把用户消息写入当前会话，并生成发送给后端的历史上下文。
+ * 3. 创建空的 assistant 占位消息，让流式 token 可以就地追加。
+ * 4. 通过 AbortController 发起可取消的 SSE 请求。
+ * 5. 流式失败时清理半截内容，并降级调用普通 /api/chat 接口。
+ * 6. 请求结束后释放控制器、清理空回复并恢复输入状态。
+ */
 async function sendMessage(text) {
+  // 空消息或当前会话已有生成任务时，直接忽略本次发送。
   const content = (text ?? draft.value).trim()
   if (!content || isTyping.value) return
+
+  // 用户消息先入列；第一条消息还会作为新会话标题。
   const conversation = activeConversation.value
   conversation.messages.push({ id: `m${Date.now()}`, role: 'user', content })
   if (conversation.title === '新咨询') {
     conversation.title = content.length > 16 ? `${content.slice(0, 16)}…` : content
   }
+
+  // 清空输入框并标记当前会话正在生成，方便输入区显示停止按钮。
   draft.value = ''
   typingId.value = conversation.id
   scrollToBottom()
 
-  // 传给后端的对话上下文：去掉刚发送的这条问题，避免重复。
+  // 传给后端的对话上下文：去掉刚发送的这条问题，避免当前问题重复进入历史。
   const history = conversation.messages
     .slice(0, -1)
     .map((message) => ({ role: message.role, content: message.content }))
 
-  // 先创建空的 assistant 消息，流式生成时逐字填充。
+  // 先创建 assistant 占位消息，token 到达后直接追加到同一个消息对象。
   const assistantId = `m${Date.now()}-r`
   conversation.messages.push({ id: assistantId, role: 'assistant', content: '' })
   pendingAssistantId.value = assistantId
   const assistantMessage = conversation.messages.find((message) => message.id === assistantId)
   scrollToBottom()
 
-  // 创建本次流式请求的控制器，停止按钮通过它中断生成。
+  // 每次请求使用独立控制器，停止按钮通过 abort() 中断当前 SSE 连接。
   const controller = new AbortController()
   activeStreamController = controller
   let stoppedByUser = false
 
   try {
+    // SSE 成功时逐段追加 token；replace 用于回答复核后替换完整回答。
     await streamChatMessage({
       question: content,
       history,
@@ -236,9 +253,10 @@ async function sendMessage(text) {
       }
     })
   } catch (err) {
+    // 区分用户主动停止和网络/服务异常；主动停止不触发普通接口兜底。
     stoppedByUser = err?.name === 'AbortError' || controller.signal.aborted
     if (!stoppedByUser) {
-      // 流式失败：清空部分内容，改用普通接口兜底。
+      // 流式失败：先清空可能已追加的半截内容，再改用普通接口兜底。
       assistantMessage.content = ''
       try {
         const data = await sendChatMessage({
@@ -254,10 +272,12 @@ async function sendMessage(text) {
       }
     }
   } finally {
+    // 无论成功、失败还是用户停止，都要释放控制器和 pending 状态。
     if (activeStreamController === controller) activeStreamController = null
     if (pendingAssistantId.value === assistantId) pendingAssistantId.value = null
   }
 
+  // 会话可能在请求过程中被删除；此时不再更新消息列表。
   const stillExists = conversations.value.some((item) => item.id === conversation.id)
   if (!stillExists || typingId.value !== conversation.id) return
   const reply = assistantMessage.content

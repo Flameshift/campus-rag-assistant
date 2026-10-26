@@ -51,6 +51,22 @@ class IngestionTests(unittest.TestCase):
         )
         self.assertIn("1.具有中华人民共和国国籍", first_article.page_content)
 
+    def test_long_article_heading_is_trimmed_for_section_path(self):
+        content = (
+            "第二章 学制与学习年限\n\n"
+            "第二条 本科标准学制为四年，按四年制定培养方案。在校修读年限一般为四年。\n"
+        ).encode("utf-8")
+
+        _, documents = self.split("rules.txt", content)
+
+        document = next(
+            item for item in documents
+            if "本科标准学制为四年" in item.page_content
+        )
+        section_path = document.metadata.get("section_path", "")
+        self.assertIn("第二条 本科标准学制为四年", section_path)
+        self.assertNotIn("在校修读年限", section_path)
+
     def test_csv_keeps_headers_in_each_record(self):
         content = "姓名,学院\n张三,文学院\n李四,历史学院\n".encode("utf-8")
 
